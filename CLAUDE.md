@@ -125,6 +125,44 @@ Reinforcement learning trading bot with human-defined guardrails.
 
 **Tech Stack:** Python (PyTorch)
 
+### resume-ai-bot
+Flask-based resume enhancement and job matching tool using GPT. Uploads resumes (PDF/DOCX), enhances them, generates cover letters, and scores against job postings.
+
+**Tech Stack:** Python (Flask, OpenAI, WeasyPrint, PyPDF2, python-docx)
+
+**Commands:**
+```bash
+cd resume-ai-bot
+source venv/bin/activate
+pip install -r requirement.txt
+python app.py                    # Runs on port 5000
+```
+
+**Key Directories:**
+- `utils/` - GPT tools, job API integration
+- `templates/` - Flask HTML templates
+
+### simple_rl_ai
+Minimal OpenAI Gym environment for learning RL concepts. Simple 1D navigation task.
+
+**Tech Stack:** Python (gym, numpy)
+
+**Commands:**
+```bash
+cd simple_rl_ai
+source rl-ai/bin/activate
+python random_agent.py           # Run random agent demo
+```
+
+### studio
+Simple Flask greeting app (prototype/demo).
+
+**Commands:**
+```bash
+cd studio
+python app.py                    # Runs on port 5000
+```
+
 ## Common Ports
 - 4000: progasset-mvp API
 - 8000: prosset-auth / eklavya backend
@@ -134,6 +172,21 @@ Reinforcement learning trading bot with human-defined guardrails.
 
 ## Killing Stuck Processes
 ```bash
-lsof -ti tcp:8545 | xargs -r kill -9
-lsof -ti tcp:4000 | xargs -r kill -9
+lsof -ti tcp:8545 | xargs kill -9
+lsof -ti tcp:4000 | xargs kill -9
+lsof -ti tcp:8000 | xargs kill -9
 ```
+
+## Architecture Notes
+
+**Python Projects**: Most Python projects use local virtual environments (`venv/`, `<project>/bin/`, or `.venv/`). Always activate before running.
+
+**Web Frameworks**:
+- FastAPI (prosset-auth, hello-name-app): Use `uvicorn app.main:app --reload`
+- Flask (eklavya backend, resume-ai-bot, studio, ai-studio): Use `python app.py` or `flask run`
+
+**Blockchain Projects**:
+- progasset-mvp: Hardhat + Express API for tokenized equities
+- prosset-auth: Dual-chain support (EVM via Hardhat, SVM via Solana/Anchor)
+
+**AI/ML Projects**: Several projects use RL patterns with PyTorch (sanjay, hybrid_rl_trading_bot, ai-studio). The ai-studio project includes CrewAI agents with self-fixing capabilities.
