@@ -100,6 +100,14 @@ class ChildWithStats(ChildResponse):
     can_send_message: bool = True
 
 
+# --- Firebase Auth Schemas ---
+
+class FirebaseLoginRequest(BaseModel):
+    """Schema for Firebase authentication login/register."""
+    id_token: str = Field(..., description="Firebase ID token from client SDK")
+    display_name: Optional[str] = Field(None, description="Display name for new users")
+
+
 # --- Kid Login Schemas ---
 
 class KidLoginRequest(BaseModel):

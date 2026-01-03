@@ -8,6 +8,7 @@ from app.schemas.user import (
     ChildUpdate,
     ChildResponse,
     ChildWithStats,
+    FirebaseLoginRequest,
     KidLoginRequest,
     KidLoginResponse,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "ChildUpdate",
     "ChildResponse",
     "ChildWithStats",
+    "FirebaseLoginRequest",
     "KidLoginRequest",
     "KidLoginResponse",
     # Chat schemas

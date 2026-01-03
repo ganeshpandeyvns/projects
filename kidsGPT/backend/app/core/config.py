@@ -32,6 +32,10 @@ class Settings(BaseSettings):
 
     # Firebase (for auth)
     FIREBASE_PROJECT_ID: str = ""
+    FIREBASE_PRIVATE_KEY_ID: str = ""
+    FIREBASE_PRIVATE_KEY: str = ""
+    FIREBASE_CLIENT_EMAIL: str = ""
+    FIREBASE_CLIENT_ID: str = ""
 
     # Safety
     MAX_DAILY_MESSAGES_FREE: int = 20

@@ -278,6 +278,17 @@ struct RegisterRequest: Codable {
     }
 }
 
+// MARK: - Firebase Auth Models
+struct FirebaseLoginRequest: Codable {
+    let idToken: String
+    let displayName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case idToken = "id_token"
+        case displayName = "display_name"
+    }
+}
+
 // MARK: - Kid Login Models
 struct KidLoginRequest: Codable {
     let pin: String

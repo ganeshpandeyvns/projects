@@ -3,6 +3,7 @@
  */
 
 import axios from 'axios'
+import { firebaseAuth, isFirebaseConfigured } from './firebase'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
@@ -12,6 +13,47 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+// Add auth interceptor to attach Firebase ID token to requests
+api.interceptors.request.use(async (config) => {
+  // Only add token if Firebase is configured
+  if (isFirebaseConfigured()) {
+    try {
+      const token = await firebaseAuth.getIdToken()
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch (error) {
+      console.warn('Failed to get Firebase token:', error)
+    }
+  }
+  return config
+})
+
+// Add response interceptor to handle token expiry
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+
+    // If we get a 401 and haven't retried yet, try to refresh the token
+    if (error.response?.status === 401 && !originalRequest._retry && isFirebaseConfigured()) {
+      originalRequest._retry = true
+
+      try {
+        const newToken = await firebaseAuth.refreshToken()
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          return api(originalRequest)
+        }
+      } catch (refreshError) {
+        console.warn('Token refresh failed:', refreshError)
+      }
+    }
+
+    return Promise.reject(error)
+  }
+)
 
 // Types
 export interface User {
@@ -127,6 +169,22 @@ export interface SystemConfig {
 
 // Auth API
 export const authApi = {
+  /**
+   * Firebase authentication - sends ID token to backend
+   * This is the primary auth method when Firebase is configured
+   */
+  firebaseLogin: async (idToken: string, displayName?: string) => {
+    const { data } = await api.post<User>('/auth/firebase-login', {
+      id_token: idToken,
+      display_name: displayName,
+    })
+    return data
+  },
+
+  /**
+   * Legacy register - for MVP without Firebase
+   * @deprecated Use Firebase auth instead
+   */
   register: async (email: string, displayName?: string) => {
     const { data } = await api.post<User>('/auth/register', {
       email,
@@ -135,16 +193,35 @@ export const authApi = {
     return data
   },
 
+  /**
+   * Legacy login - for MVP without Firebase
+   * @deprecated Use Firebase auth instead
+   */
   login: async (email: string) => {
     const { data } = await api.post<User>(`/auth/login?email=${encodeURIComponent(email)}`)
     return data
   },
 
-  getMe: async (userId: number) => {
-    const { data } = await api.get<User>(`/auth/me?user_id=${userId}`)
+  /**
+   * Get current user profile (requires Firebase auth token)
+   */
+  getMe: async () => {
+    const { data } = await api.get<User>('/auth/me')
     return data
   },
 
+  /**
+   * Legacy getMe - for MVP without Firebase
+   * @deprecated Use getMe() with Firebase token instead
+   */
+  getMeLegacy: async (userId: number) => {
+    const { data } = await api.get<User>(`/auth/me-legacy?user_id=${userId}`)
+    return data
+  },
+
+  /**
+   * Kid login with PIN (no Firebase required)
+   */
   kidLogin: async (pin: string) => {
     const { data } = await api.post<KidLoginResponse>('/auth/kid-login', { pin })
     return data

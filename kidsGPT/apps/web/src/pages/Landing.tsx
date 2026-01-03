@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '../App'
 import { authApi, adminApi } from '../lib/api'
+import { firebaseAuth, isFirebaseConfigured } from '../lib/firebase'
 
 type PortalType = 'kids' | 'parent' | 'admin' | null
 
@@ -203,14 +204,16 @@ function KidsForm({ onBack }: { onBack: () => void }) {
   )
 }
 
-// Parent/Admin Login Form
+// Parent/Admin Login Form with Firebase support
 function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onBack: () => void }) {
   const navigate = useNavigate()
-  const { setUser } = useAuth()
+  const { setUser, isFirebaseEnabled } = useAuth()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [isNewUser, setIsNewUser] = useState(false)
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const config = {
     parent: {
@@ -227,6 +230,62 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
     },
   }[portalType]
 
+  // Firebase authentication
+  const handleFirebaseAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      let firebaseUser
+      if (isNewUser) {
+        // Create new account with Firebase
+        firebaseUser = await firebaseAuth.signUp(email, password, name)
+      } else {
+        // Sign in with Firebase
+        firebaseUser = await firebaseAuth.signIn(email, password)
+      }
+
+      // Get ID token and sync with backend
+      const idToken = await firebaseUser.getIdToken()
+      const user = await authApi.firebaseLogin(idToken, name || firebaseUser.displayName || undefined)
+
+      // Check admin access
+      if (portalType === 'admin' && user.role !== 'admin') {
+        setError('This account does not have admin access.')
+        await firebaseAuth.signOut()
+        setIsLoading(false)
+        return
+      }
+
+      setUser(user)
+      navigate(portalType === 'admin' ? '/admin' : '/parent')
+    } catch (err: any) {
+      // Handle Firebase errors
+      const errorCode = err.code
+      if (errorCode === 'auth/user-not-found') {
+        setIsNewUser(true)
+        setError('No account found. Please create one.')
+      } else if (errorCode === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.')
+      } else if (errorCode === 'auth/email-already-in-use') {
+        setError('Email already registered. Please sign in.')
+        setIsNewUser(false)
+      } else if (errorCode === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.')
+      } else if (errorCode === 'auth/invalid-email') {
+        setError('Please enter a valid email address.')
+      } else if (errorCode === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please try again.')
+      } else {
+        setError(err.response?.data?.detail || err.message || 'Authentication failed')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Legacy email-only authentication (fallback when Firebase not configured)
   const login = useMutation({
     mutationFn: () => authApi.login(email),
     onSuccess: (user) => {
@@ -238,7 +297,6 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
       navigate(portalType === 'admin' ? '/admin' : '/parent')
     },
     onError: () => {
-      // User not found - show registration form
       setIsNewUser(true)
       setError('')
     },
@@ -260,7 +318,6 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
       navigate('/admin')
     },
     onError: (err: any) => {
-      // If admin already exists, try to login instead
       if (err.response?.data?.detail?.includes('already exists')) {
         setError('An admin already exists. Please login with the existing admin email.')
         setIsNewUser(false)
@@ -270,7 +327,7 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
     },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLegacySubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (isNewUser) {
@@ -280,7 +337,8 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
     }
   }
 
-  const isLoading = login.isPending || register.isPending || createAdmin.isPending
+  const handleSubmit = isFirebaseEnabled ? handleFirebaseAuth : handleLegacySubmit
+  const isPending = isLoading || login.isPending || register.isPending || createAdmin.isPending
 
   return (
     <motion.div
@@ -311,6 +369,22 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
             />
           </div>
 
+          {/* Password field - only shown when Firebase is configured */}
+          {isFirebaseEnabled && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+              />
+            </div>
+          )}
+
           {isNewUser && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
               <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
@@ -328,10 +402,10 @@ function LoginForm({ portalType, onBack }: { portalType: 'parent' | 'admin'; onB
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isPending}
             className={`w-full py-4 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 bg-gradient-to-r ${config.gradient}`}
           >
-            {isLoading ? 'Please wait...' : isNewUser ? 'Create Account' : 'Continue'}
+            {isPending ? 'Please wait...' : isNewUser ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 

@@ -10,18 +10,60 @@ class APIClient: ObservableObject {
 
     private let session: URLSession
 
+    // Reference to AuthManager for Firebase token (set via environment)
+    weak var authManager: AuthManager?
+
     init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         self.session = URLSession(configuration: config)
     }
 
-    // MARK: - Auth API
+    // MARK: - Request Helper with Auth
+
+    private func createRequest(url: URL, method: String = "GET") -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Add Firebase auth token if available
+        if let token = authManager?.firebaseIdToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        return request
+    }
+
+    // MARK: - Firebase Auth API
+
+    /// Login with Firebase ID token - syncs with backend
+    func firebaseLogin(idToken: String, displayName: String?) async throws -> User {
+        let url = URL(string: "\(baseURL)/auth/firebase-login")!
+        var request = createRequest(url: url, method: "POST")
+
+        let body = FirebaseLoginRequest(idToken: idToken, displayName: displayName)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: request)
+        try checkResponse(response)
+        return try JSONDecoder().decode(User.self, from: data)
+    }
+
+    /// Get current user profile using Firebase auth token
+    func getMe() async throws -> User {
+        let url = URL(string: "\(baseURL)/auth/me")!
+        let request = createRequest(url: url, method: "GET")
+
+        let (data, response) = try await session.data(for: request)
+        try checkResponse(response)
+        return try JSONDecoder().decode(User.self, from: data)
+    }
+
+    // MARK: - Legacy Auth API (MVP fallback)
+
     func login(email: String) async throws -> User {
         let url = URL(string: "\(baseURL)/auth/login?email=\(email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? email)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -30,9 +72,7 @@ class APIClient: ObservableObject {
 
     func register(email: String, displayName: String?) async throws -> User {
         let url = URL(string: "\(baseURL)/auth/register")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let body = RegisterRequest(email: email, displayName: displayName)
         request.httpBody = try JSONEncoder().encode(body)
@@ -46,9 +86,7 @@ class APIClient: ObservableObject {
         let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? email
         let encodedName = displayName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? displayName
         let url = URL(string: "\(baseURL)/admin/create-admin?email=\(encodedEmail)&display_name=\(encodedName)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -57,9 +95,7 @@ class APIClient: ObservableObject {
 
     func kidLogin(pin: String) async throws -> KidLoginResponse {
         let url = URL(string: "\(baseURL)/auth/kid-login")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let body = KidLoginRequest(pin: pin)
         request.httpBody = try JSONEncoder().encode(body)
@@ -72,8 +108,7 @@ class APIClient: ObservableObject {
     // MARK: - Children API
     func getChildren(parentId: Int) async throws -> [ChildWithStats] {
         let url = URL(string: "\(baseURL)/children?parent_id=\(parentId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -82,9 +117,7 @@ class APIClient: ObservableObject {
 
     func createChild(parentId: Int, name: String, age: Int, interests: [String]? = nil) async throws -> Child {
         let url = URL(string: "\(baseURL)/children?parent_id=\(parentId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let body = CreateChildRequest(name: name, age: age, interests: interests)
         request.httpBody = try JSONEncoder().encode(body)
@@ -96,8 +129,7 @@ class APIClient: ObservableObject {
 
     func getChild(childId: Int, parentId: Int) async throws -> ChildWithStats {
         let url = URL(string: "\(baseURL)/children/\(childId)?parent_id=\(parentId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -106,9 +138,7 @@ class APIClient: ObservableObject {
 
     func regeneratePin(childId: Int, parentId: Int) async throws -> Child {
         let url = URL(string: "\(baseURL)/children/\(childId)/regenerate-pin?parent_id=\(parentId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let request = createRequest(url: url, method: "POST")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -118,9 +148,7 @@ class APIClient: ObservableObject {
     // MARK: - Chat API
     func sendMessage(childId: Int, message: String, conversationId: Int? = nil) async throws -> ChatResponse {
         let url = URL(string: "\(baseURL)/chat")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var request = createRequest(url: url, method: "POST")
 
         let body = SendMessageRequest(childId: childId, message: message, conversationId: conversationId)
         request.httpBody = try JSONEncoder().encode(body)
@@ -132,8 +160,7 @@ class APIClient: ObservableObject {
 
     func getTodayStats(childId: Int) async throws -> TodayStats {
         let url = URL(string: "\(baseURL)/chat/today/\(childId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -142,8 +169,7 @@ class APIClient: ObservableObject {
 
     func getConversations(childId: Int, parentId: Int, limit: Int = 20, offset: Int = 0) async throws -> [Conversation] {
         let url = URL(string: "\(baseURL)/chat/conversations/\(childId)?parent_id=\(parentId)&limit=\(limit)&offset=\(offset)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -152,8 +178,7 @@ class APIClient: ObservableObject {
 
     func getConversation(conversationId: Int, parentId: Int) async throws -> ConversationWithMessages {
         let url = URL(string: "\(baseURL)/chat/conversation/\(conversationId)?parent_id=\(parentId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -163,8 +188,7 @@ class APIClient: ObservableObject {
     // MARK: - Admin API
     func getAdminStats(adminId: Int) async throws -> AdminStats {
         let url = URL(string: "\(baseURL)/admin/stats?admin_id=\(adminId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -173,8 +197,7 @@ class APIClient: ObservableObject {
 
     func getUsers(adminId: Int, limit: Int = 50, offset: Int = 0) async throws -> [UserListItem] {
         let url = URL(string: "\(baseURL)/admin/users?admin_id=\(adminId)&limit=\(limit)&offset=\(offset)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -183,8 +206,7 @@ class APIClient: ObservableObject {
 
     func getSystemConfig(adminId: Int) async throws -> SystemConfig {
         let url = URL(string: "\(baseURL)/admin/config?admin_id=\(adminId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        let request = createRequest(url: url, method: "GET")
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -193,9 +215,7 @@ class APIClient: ObservableObject {
 
     func updateUserTier(adminId: Int, userId: Int, tier: String) async throws {
         let url = URL(string: "\(baseURL)/admin/users/\(userId)/subscription?admin_id=\(adminId)&tier=\(tier)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let request = createRequest(url: url, method: "PATCH")
 
         let (_, response) = try await session.data(for: request)
         try checkResponse(response)
@@ -203,9 +223,7 @@ class APIClient: ObservableObject {
 
     func toggleUserActive(adminId: Int, userId: Int) async throws {
         let url = URL(string: "\(baseURL)/admin/users/\(userId)/toggle-active?admin_id=\(adminId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let request = createRequest(url: url, method: "PATCH")
 
         let (_, response) = try await session.data(for: request)
         try checkResponse(response)
