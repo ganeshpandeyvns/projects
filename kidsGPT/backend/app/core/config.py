@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    # AI Providers
-    DEFAULT_AI_PROVIDER: Literal["openai", "anthropic"] = "openai"
+    # AI Providers (use 'mock' for MVP testing without external APIs)
+    DEFAULT_AI_PROVIDER: Literal["openai", "anthropic", "mock"] = "mock"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
     ANTHROPIC_API_KEY: str = ""

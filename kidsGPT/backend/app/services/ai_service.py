@@ -6,6 +6,7 @@ from functools import lru_cache
 from ai.providers.base import AIProvider, ChatMessage, ChatResponse, ModerationResult
 from ai.providers.openai_provider import OpenAIProvider
 from ai.providers.anthropic_provider import AnthropicProvider
+from ai.providers.mock_provider import MockProvider
 from ai.prompts import get_system_prompt
 from ai.filters.input_filter import InputFilter
 from ai.filters.output_filter import OutputFilter
@@ -24,6 +25,7 @@ class AIService:
     _providers: Dict[str, Type[AIProvider]] = {
         "openai": OpenAIProvider,
         "anthropic": AnthropicProvider,
+        "mock": MockProvider,
     }
 
     _instance: Optional["AIService"] = None

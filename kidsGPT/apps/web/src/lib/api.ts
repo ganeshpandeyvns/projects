@@ -81,6 +81,38 @@ export interface TodayStats {
   can_send_message: boolean
 }
 
+// Admin Types
+export interface AdminStats {
+  total_users: number
+  total_children: number
+  total_conversations: number
+  total_messages: number
+  messages_today: number
+  active_users_today: number
+  flagged_conversations: number
+}
+
+export interface UserListItem {
+  id: number
+  email: string
+  display_name: string | null
+  role: string
+  subscription_tier: string
+  is_active: boolean
+  created_at: string
+  children_count: number
+  total_messages: number
+}
+
+export interface SystemConfig {
+  ai_provider: string
+  default_daily_limit: number
+  max_children_free: number
+  max_children_basic: number
+  max_children_premium: number
+  content_filter_level: string
+}
+
 // Auth API
 export const authApi = {
   register: async (email: string, displayName?: string) => {
@@ -155,6 +187,59 @@ export const chatApi = {
   getConversation: async (conversationId: number, parentId: number) => {
     const { data } = await api.get<Conversation & { messages: Message[] }>(
       `/chat/conversation/${conversationId}?parent_id=${parentId}`
+    )
+    return data
+  },
+}
+
+// Admin API
+export const adminApi = {
+  getStats: async (adminId: number) => {
+    const { data } = await api.get<AdminStats>(`/admin/stats?admin_id=${adminId}`)
+    return data
+  },
+
+  getUsers: async (adminId: number, limit = 50, offset = 0) => {
+    const { data } = await api.get<UserListItem[]>(
+      `/admin/users?admin_id=${adminId}&limit=${limit}&offset=${offset}`
+    )
+    return data
+  },
+
+  updateUserTier: async (adminId: number, userId: number, tier: string) => {
+    const { data } = await api.patch(
+      `/admin/users/${userId}/subscription?admin_id=${adminId}&tier=${tier}`
+    )
+    return data
+  },
+
+  toggleUserActive: async (adminId: number, userId: number) => {
+    const { data } = await api.patch(
+      `/admin/users/${userId}/toggle-active?admin_id=${adminId}`
+    )
+    return data
+  },
+
+  getFlaggedConversations: async (adminId: number, limit = 20) => {
+    const { data } = await api.get(
+      `/admin/flagged-conversations?admin_id=${adminId}&limit=${limit}`
+    )
+    return data
+  },
+
+  getConfig: async (adminId: number) => {
+    const { data } = await api.get<SystemConfig>(`/admin/config?admin_id=${adminId}`)
+    return data
+  },
+
+  updateConfig: async (adminId: number, config: SystemConfig) => {
+    const { data } = await api.patch(`/admin/config?admin_id=${adminId}`, config)
+    return data
+  },
+
+  createAdmin: async (email: string, displayName = 'Admin') => {
+    const { data } = await api.post(
+      `/admin/create-admin?email=${encodeURIComponent(email)}&display_name=${encodeURIComponent(displayName)}`
     )
     return data
   },

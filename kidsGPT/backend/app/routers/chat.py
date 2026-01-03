@@ -19,7 +19,7 @@ from ai.providers.base import ChatMessage
 router = APIRouter()
 
 
-@router.post("/", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
     db: AsyncSession = Depends(get_db)
@@ -312,7 +312,7 @@ async def get_today_stats(
     }
 
 
-@router.post("/stream")
+@router.post("/stream", include_in_schema=True)
 async def stream_message(
     request: ChatRequest,
     db: AsyncSession = Depends(get_db)

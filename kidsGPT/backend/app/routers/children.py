@@ -12,7 +12,7 @@ from app.schemas import ChildCreate, ChildUpdate, ChildResponse, ChildWithStats
 router = APIRouter()
 
 
-@router.post("/", response_model=ChildResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ChildResponse, status_code=status.HTTP_201_CREATED)
 async def create_child(
     child_data: ChildCreate,
     parent_id: int,  # MVP: pass directly. Production: extract from token
@@ -68,7 +68,7 @@ async def create_child(
     return child
 
 
-@router.get("/", response_model=List[ChildWithStats])
+@router.get("", response_model=List[ChildWithStats])
 async def list_children(
     parent_id: int,  # MVP: pass directly. Production: extract from token
     db: AsyncSession = Depends(get_db)

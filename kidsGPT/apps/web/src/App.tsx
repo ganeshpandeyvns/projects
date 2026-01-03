@@ -5,6 +5,7 @@ import { useState, createContext, useContext } from 'react'
 // Pages
 import KidsChat from './pages/KidsChat'
 import ParentDashboard from './pages/ParentDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import Landing from './pages/Landing'
 
 // Create a query client
@@ -65,6 +66,14 @@ function App() {
               path="/parent/*"
               element={
                 user ? <ParentDashboard /> : <Navigate to="/" replace />
+              }
+            />
+
+            {/* Admin Dashboard */}
+            <Route
+              path="/admin/*"
+              element={
+                user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" replace />
               }
             />
 

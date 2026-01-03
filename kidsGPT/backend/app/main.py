@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.routers import auth, chat, children
+from app.routers import auth, chat, children, admin
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ app = FastAPI(
     description="Safe AI Learning Companion for Children - API",
     version=settings.APP_VERSION,
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 # CORS middleware for frontend
@@ -48,6 +49,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["Authentication"])
 app.include_router(children.router, prefix=f"{settings.API_PREFIX}/children", tags=["Children"])
 app.include_router(chat.router, prefix=f"{settings.API_PREFIX}/chat", tags=["Chat"])
+app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["Admin"])
 
 
 @app.get("/")
