@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../App'
 import { childrenApi, chatApi } from '../lib/api'
-import type { ChildWithStats, Conversation, Message } from '../lib/api'
+import type { ChildWithStats, Conversation, Message, Child } from '../lib/api'
 
 // Animated stat card with premium styling
 function StatCard({ value, label, icon, gradient }: { value: number; label: string; icon: string; gradient: string }) {
@@ -36,12 +36,26 @@ function ChildCard({
   child,
   onSelect,
   onViewHistory,
+  onRegeneratePin,
+  isRegeneratingPin,
 }: {
   child: ChildWithStats
   onSelect: () => void
   onViewHistory: () => void
+  onRegeneratePin: () => void
+  isRegeneratingPin?: boolean
 }) {
   const progressPercent = Math.min((child.messages_today / child.daily_message_limit) * 100, 100)
+  const [showPin, setShowPin] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copyPin = () => {
+    if (child.login_pin) {
+      navigator.clipboard.writeText(child.login_pin)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   return (
     <motion.div
@@ -69,6 +83,44 @@ function ChildCard({
         >
           {child.can_send_message ? 'Active' : 'Limit Reached'}
         </span>
+      </div>
+
+      {/* Login PIN Section */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-100">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-amber-800 flex items-center gap-2">
+            <span>🔑</span> Login PIN
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPin(!showPin)}
+              className="text-xs text-amber-600 hover:text-amber-800 font-medium"
+            >
+              {showPin ? 'Hide' : 'Show'}
+            </button>
+            <button
+              onClick={copyPin}
+              className="text-xs text-amber-600 hover:text-amber-800 font-medium"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-2xl font-bold text-amber-900 tracking-wider">
+            {showPin ? child.login_pin : '••••••'}
+          </span>
+          <button
+            onClick={onRegeneratePin}
+            disabled={isRegeneratingPin}
+            className="text-xs px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {isRegeneratingPin ? 'Generating...' : 'New PIN'}
+          </button>
+        </div>
+        <p className="text-xs text-amber-600 mt-2">
+          Share this PIN with your child to log in to Kids Zone
+        </p>
       </div>
 
       {/* Progress bar */}
@@ -421,6 +473,13 @@ export default function ParentDashboard() {
     },
   })
 
+  const regeneratePin = useMutation({
+    mutationFn: (childId: number) => childrenApi.regeneratePin(childId, user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['children'] })
+    },
+  })
+
   const handleSelectChild = (child: ChildWithStats) => {
     setChildId(child.id)
     navigate('/chat')
@@ -544,6 +603,8 @@ export default function ParentDashboard() {
                   child={child}
                   onSelect={() => handleSelectChild(child)}
                   onViewHistory={() => setHistoryChild(child)}
+                  onRegeneratePin={() => regeneratePin.mutate(child.id)}
+                  isRegeneratingPin={regeneratePin.isPending}
                 />
               </motion.div>
             ))}

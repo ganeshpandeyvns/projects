@@ -28,6 +28,7 @@ struct Child: Codable, Identifiable {
     let parentId: Int
     let name: String
     let age: Int
+    let loginPin: String  // 6-digit PIN for kid login
     let avatarId: String?
     let interests: [String]?
     let learningGoals: [String]?
@@ -40,6 +41,7 @@ struct Child: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, name, age, interests
         case parentId = "parent_id"
+        case loginPin = "login_pin"
         case avatarId = "avatar_id"
         case learningGoals = "learning_goals"
         case dailyMessageLimit = "daily_message_limit"
@@ -55,6 +57,7 @@ struct ChildWithStats: Codable, Identifiable {
     let parentId: Int
     let name: String
     let age: Int
+    let loginPin: String  // 6-digit PIN for kid login
     let avatarId: String?
     let interests: [String]?
     let learningGoals: [String]?
@@ -70,6 +73,7 @@ struct ChildWithStats: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, name, age, interests
         case parentId = "parent_id"
+        case loginPin = "login_pin"
         case avatarId = "avatar_id"
         case learningGoals = "learning_goals"
         case dailyMessageLimit = "daily_message_limit"
@@ -271,5 +275,32 @@ struct RegisterRequest: Codable {
     enum CodingKeys: String, CodingKey {
         case email
         case displayName = "display_name"
+    }
+}
+
+// MARK: - Kid Login Models
+struct KidLoginRequest: Codable {
+    let pin: String
+}
+
+struct KidLoginResponse: Codable {
+    let childId: Int
+    let childName: String
+    let age: Int
+    let avatarId: String?
+    let dailyLimit: Int
+    let messagesRemaining: Int
+    let canSendMessage: Bool
+    let parentName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case age
+        case childId = "child_id"
+        case childName = "child_name"
+        case avatarId = "avatar_id"
+        case dailyLimit = "daily_limit"
+        case messagesRemaining = "messages_remaining"
+        case canSendMessage = "can_send_message"
+        case parentName = "parent_name"
     }
 }

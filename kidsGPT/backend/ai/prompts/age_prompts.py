@@ -203,7 +203,7 @@ def get_system_prompt(
     child_name: str = "friend",
     interests: List[str] = None,
     learning_goals: List[str] = None,
-    mascot_name: str = "Sparky",
+    mascot_name: str = "Sheldon",
 ) -> str:
     """
     Generate a complete, age-appropriate system prompt.

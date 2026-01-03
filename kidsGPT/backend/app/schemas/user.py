@@ -79,6 +79,7 @@ class ChildResponse(ChildBase):
     """Schema for child response."""
     id: int
     parent_id: int
+    login_pin: str  # 6-digit PIN for kid login
     avatar_id: Optional[str]
     interests: Optional[List[str]]
     learning_goals: Optional[List[str]]
@@ -97,3 +98,25 @@ class ChildWithStats(ChildResponse):
     total_conversations: int = 0
     total_messages: int = 0
     can_send_message: bool = True
+
+
+# --- Kid Login Schemas ---
+
+class KidLoginRequest(BaseModel):
+    """Schema for kid login with PIN."""
+    pin: str = Field(..., min_length=6, max_length=6, pattern=r'^\d{6}$')
+
+
+class KidLoginResponse(BaseModel):
+    """Schema for kid login response."""
+    child_id: int
+    child_name: str
+    age: int
+    avatar_id: Optional[str]
+    daily_limit: int
+    messages_remaining: int
+    can_send_message: bool
+    parent_name: Optional[str]
+
+    class Config:
+        from_attributes = True

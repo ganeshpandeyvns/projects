@@ -55,6 +55,20 @@ class APIClient: ObservableObject {
         return try JSONDecoder().decode(User.self, from: data)
     }
 
+    func kidLogin(pin: String) async throws -> KidLoginResponse {
+        let url = URL(string: "\(baseURL)/auth/kid-login")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body = KidLoginRequest(pin: pin)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: request)
+        try checkResponse(response)
+        return try JSONDecoder().decode(KidLoginResponse.self, from: data)
+    }
+
     // MARK: - Children API
     func getChildren(parentId: Int) async throws -> [ChildWithStats] {
         let url = URL(string: "\(baseURL)/children?parent_id=\(parentId)")!
@@ -88,6 +102,17 @@ class APIClient: ObservableObject {
         let (data, response) = try await session.data(for: request)
         try checkResponse(response)
         return try JSONDecoder().decode(ChildWithStats.self, from: data)
+    }
+
+    func regeneratePin(childId: Int, parentId: Int) async throws -> Child {
+        let url = URL(string: "\(baseURL)/children/\(childId)/regenerate-pin?parent_id=\(parentId)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let (data, response) = try await session.data(for: request)
+        try checkResponse(response)
+        return try JSONDecoder().decode(Child.self, from: data)
     }
 
     // MARK: - Chat API

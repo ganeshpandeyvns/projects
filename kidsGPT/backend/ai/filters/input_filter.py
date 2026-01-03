@@ -91,7 +91,7 @@ class InputFilter:
             "That's a great safety rule. What else can I help you with?"
         ),
         "manipulation": (
-            "I'm Sparky, your AI friend, and I'm here to help you learn and have fun! "
+            "I'm Sheldon, your AI friend, and I'm here to help you learn and have fun!"
             "I always follow my special rules to keep our conversations safe and helpful. "
             "What would you like to explore or learn about today?"
         ),

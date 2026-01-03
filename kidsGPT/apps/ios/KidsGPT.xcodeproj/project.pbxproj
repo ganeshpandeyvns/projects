@@ -19,6 +19,10 @@
 		A1000010 /* ParentDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010; };
 		A1000011 /* AdminPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000012; };
+		A1000013 /* LegalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
+		A1000014 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014; };
+		A1000015 /* Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000015; };
+		A1000016 /* KidsLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000016; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +38,10 @@
 		A2000010 /* ParentDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParentDashboardView.swift; sourceTree = "<group>"; };
 		A2000011 /* AdminPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminPanelView.swift; sourceTree = "<group>"; };
 		A2000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2000013 /* LegalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalViews.swift; sourceTree = "<group>"; };
+		A2000014 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		A2000015 /* Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessibility.swift; sourceTree = "<group>"; };
+		A2000016 /* KidsLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsLoginView.swift; sourceTree = "<group>"; };
 		A3000001 /* KidsGPT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KidsGPT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -91,6 +99,8 @@
 				A2000004 /* AuthManager.swift */,
 				A2000005 /* APIClient.swift */,
 				A2000006 /* Extensions.swift */,
+				A2000014 /* NetworkMonitor.swift */,
+				A2000015 /* Accessibility.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -102,8 +112,17 @@
 				A5000008 /* KidsChat */,
 				A5000009 /* ParentDashboard */,
 				A5000010 /* AdminPanel */,
+				A5000011 /* Legal */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A5000011 /* Legal */ = {
+			isa = PBXGroup;
+			children = (
+				A2000013 /* LegalViews.swift */,
+			);
+			path = Legal;
 			sourceTree = "<group>";
 		};
 		A5000007 /* Landing */ = {
@@ -111,6 +130,7 @@
 			children = (
 				A2000007 /* LandingView.swift */,
 				A2000008 /* LoginView.swift */,
+				A2000016 /* KidsLoginView.swift */,
 			);
 			path = Landing;
 			sourceTree = "<group>";
@@ -219,6 +239,10 @@
 				A1000009 /* KidsChatView.swift in Sources */,
 				A1000010 /* ParentDashboardView.swift in Sources */,
 				A1000011 /* AdminPanelView.swift in Sources */,
+				A1000013 /* LegalViews.swift in Sources */,
+				A1000014 /* NetworkMonitor.swift in Sources */,
+				A1000015 /* Accessibility.swift in Sources */,
+				A1000016 /* KidsLoginView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

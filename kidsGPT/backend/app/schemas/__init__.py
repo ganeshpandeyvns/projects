@@ -8,6 +8,8 @@ from app.schemas.user import (
     ChildUpdate,
     ChildResponse,
     ChildWithStats,
+    KidLoginRequest,
+    KidLoginResponse,
 )
 from app.schemas.chat import (
     MessageCreate,
@@ -30,6 +32,8 @@ __all__ = [
     "ChildUpdate",
     "ChildResponse",
     "ChildWithStats",
+    "KidLoginRequest",
+    "KidLoginResponse",
     # Chat schemas
     "MessageCreate",
     "MessageResponse",

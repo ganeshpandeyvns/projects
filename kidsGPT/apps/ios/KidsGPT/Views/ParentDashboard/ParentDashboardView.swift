@@ -292,60 +292,93 @@ struct EmptyChildrenCard: View {
 
 struct ChildCard: View {
     let child: ChildWithStats
+    @State private var showPin = false
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Avatar
-            ZStack {
-                Circle()
-                    .fill(AppColors.parentGradient)
-                    .frame(width: 56, height: 56)
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(AppColors.parentGradient)
+                        .frame(width: 56, height: 56)
 
-                Text(String(child.name.prefix(1)).uppercased())
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
+                    Text(String(child.name.prefix(1)).uppercased())
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
 
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(child.name)
-                    .font(.headline)
-                    .foregroundColor(AppColors.textPrimary)
+                // Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(child.name)
+                        .font(.headline)
+                        .foregroundColor(AppColors.textPrimary)
 
-                Text("\(child.age) years old")
-                    .font(.subheadline)
-                    .foregroundColor(AppColors.textSecondary)
+                    Text("\(child.age) years old")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
 
-                // Progress
-                HStack(spacing: 8) {
-                    ProgressView(value: child.progressPercentage / 100)
-                        .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "8b5cf6")))
-                        .frame(width: 80)
+                    // Progress
+                    HStack(spacing: 8) {
+                        ProgressView(value: child.progressPercentage / 100)
+                            .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "8b5cf6")))
+                            .frame(width: 80)
 
-                    Text("\(child.messagesRemaining) left today")
-                        .font(.caption)
+                        Text("\(child.messagesRemaining) left today")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Spacer()
+
+                // Stats
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(child.totalMessages)")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(hex: "8b5cf6"))
+
+                    Text("messages")
+                        .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
                 }
-            }
 
-            Spacer()
-
-            // Stats
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(child.totalMessages)")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color(hex: "8b5cf6"))
-
-                Text("messages")
-                    .font(.caption2)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
 
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+            // PIN Display
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "key.fill")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "f59e0b"))
+                    Text("PIN:")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(hex: "f59e0b"))
+                    Text(showPin ? child.loginPin : "••••••")
+                        .font(.system(.caption, design: .monospaced))
+                        .fontWeight(.bold)
+                        .foregroundColor(Color(hex: "92400e"))
+                }
+
+                Spacer()
+
+                Button(action: { showPin.toggle() }) {
+                    Text(showPin ? "Hide" : "Show")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(hex: "f59e0b"))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(hex: "fef3c7"))
+            .cornerRadius(8)
         }
         .padding(16)
         .background(Color.white)
@@ -598,6 +631,16 @@ struct ChildDetailSheet: View {
 
     @State private var conversations: [Conversation] = []
     @State private var isLoading = true
+    @State private var showPin = false
+    @State private var currentPin: String
+    @State private var isRegeneratingPin = false
+    @State private var showRegenerateConfirm = false
+
+    init(child: ChildWithStats, onClose: @escaping () -> Void) {
+        self.child = child
+        self.onClose = onClose
+        self._currentPin = State(initialValue: child.loginPin)
+    }
 
     var body: some View {
         NavigationView {
@@ -627,6 +670,70 @@ struct ChildDetailSheet: View {
                         }
                     }
                     .padding(.top)
+
+                    // Login PIN Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Login PIN")
+                            .font(.headline)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        VStack(spacing: 12) {
+                            HStack {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "key.fill")
+                                        .font(.title3)
+                                        .foregroundColor(Color(hex: "f59e0b"))
+
+                                    Text(showPin ? currentPin : "••••••")
+                                        .font(.system(size: 28, weight: .bold, design: .monospaced))
+                                        .foregroundColor(Color(hex: "92400e"))
+                                }
+
+                                Spacer()
+
+                                Button(action: { showPin.toggle() }) {
+                                    Image(systemName: showPin ? "eye.slash.fill" : "eye.fill")
+                                        .font(.title3)
+                                        .foregroundColor(Color(hex: "f59e0b"))
+                                }
+                            }
+
+                            Divider()
+
+                            HStack {
+                                Text("Share this PIN with \(child.name) to log in")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+
+                                Spacer()
+
+                                Button(action: { showRegenerateConfirm = true }) {
+                                    HStack(spacing: 4) {
+                                        if isRegeneratingPin {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle())
+                                                .scaleEffect(0.7)
+                                        } else {
+                                            Image(systemName: "arrow.clockwise")
+                                        }
+                                        Text("New PIN")
+                                    }
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color(hex: "f59e0b"))
+                                    .cornerRadius(8)
+                                }
+                                .disabled(isRegeneratingPin)
+                            }
+                        }
+                        .padding(16)
+                        .background(Color(hex: "fef3c7"))
+                        .cornerRadius(12)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Stats
                     HStack(spacing: 20) {
@@ -732,6 +839,34 @@ struct ChildDetailSheet: View {
         }
         .onAppear {
             loadConversations()
+        }
+        .alert("Generate New PIN?", isPresented: $showRegenerateConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Generate", role: .destructive) {
+                regeneratePin()
+            }
+        } message: {
+            Text("This will replace the current PIN. \(child.name) will need to use the new PIN to log in.")
+        }
+    }
+
+    private func regeneratePin() {
+        guard let user = authManager.currentUser else { return }
+        isRegeneratingPin = true
+
+        Task {
+            do {
+                let updatedChild = try await apiClient.regeneratePin(childId: child.id, parentId: user.id)
+                await MainActor.run {
+                    currentPin = updatedChild.loginPin
+                    isRegeneratingPin = false
+                    showPin = true  // Show the new PIN
+                }
+            } catch {
+                await MainActor.run {
+                    isRegeneratingPin = false
+                }
+            }
         }
     }
 

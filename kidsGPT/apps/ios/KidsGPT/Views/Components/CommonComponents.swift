@@ -222,7 +222,7 @@ struct SkeletonCard: View {
         EmptyStateView(
             icon: "🎉",
             title: "No Messages",
-            message: "Start chatting with Sparky!",
+            message: "Start chatting with Sheldon!",
             action: {},
             actionTitle: "Start Chat"
         )

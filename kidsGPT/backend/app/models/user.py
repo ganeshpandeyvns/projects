@@ -1,5 +1,7 @@
 """User and Child database models."""
 
+import random
+import string
 from datetime import datetime, date
 from enum import Enum as PyEnum
 from typing import Optional, List
@@ -7,6 +9,11 @@ from sqlalchemy import String, Integer, Boolean, DateTime, Date, ForeignKey, JSO
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+
+def generate_kid_pin() -> str:
+    """Generate a unique 6-digit PIN for kid login."""
+    return ''.join(random.choices(string.digits, k=6))
 
 
 class UserRole(str, PyEnum):
@@ -55,6 +62,7 @@ class Child(Base):
     parent_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     age: Mapped[int] = mapped_column(Integer, nullable=False)  # 3-13
+    login_pin: Mapped[str] = mapped_column(String(6), unique=True, index=True, nullable=False, default=generate_kid_pin)
     avatar_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # For UI customization
     interests: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # ["dinosaurs", "space", "art"]
     learning_goals: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Parent-defined goals
@@ -92,3 +100,8 @@ class Child(Base):
         """Increment daily message count."""
         self.reset_daily_messages()
         self.messages_today += 1
+
+    def regenerate_pin(self) -> str:
+        """Generate a new login PIN for this child."""
+        self.login_pin = generate_kid_pin()
+        return self.login_pin

@@ -101,6 +101,7 @@ async def list_children(
             parent_id=child.parent_id,
             name=child.name,
             age=child.age,
+            login_pin=child.login_pin,
             avatar_id=child.avatar_id,
             interests=child.interests,
             learning_goals=child.learning_goals,
@@ -154,6 +155,7 @@ async def get_child(
         parent_id=child.parent_id,
         name=child.name,
         age=child.age,
+        login_pin=child.login_pin,
         avatar_id=child.avatar_id,
         interests=child.interests,
         learning_goals=child.learning_goals,
@@ -218,3 +220,33 @@ async def delete_child(
 
     await db.delete(child)
     await db.flush()
+
+
+@router.post("/{child_id}/regenerate-pin", response_model=ChildResponse)
+async def regenerate_child_pin(
+    child_id: int,
+    parent_id: int,  # MVP: pass directly
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Regenerate a child's login PIN.
+
+    Use this if the PIN was compromised or shared with unauthorized people.
+    """
+    result = await db.execute(
+        select(Child).where(Child.id == child_id, Child.parent_id == parent_id)
+    )
+    child = result.scalar_one_or_none()
+
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child not found"
+        )
+
+    # Generate new PIN
+    child.regenerate_pin()
+    await db.flush()
+    await db.refresh(child)
+
+    return child

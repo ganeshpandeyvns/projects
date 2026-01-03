@@ -96,9 +96,9 @@ class MockProvider(AIProvider):
         if "story" in last_message or "tell me a" in last_message:
             return f"{random.choice(STORY_STARTERS)} Would you like me to continue this story?"
 
-        # Check for questions about Sparky
+        # Check for questions about Sheldon
         if "who are you" in last_message or "your name" in last_message:
-            return "I'm Sparky, your friendly AI buddy! I love learning new things and going on adventures with curious minds like yours. What should we explore today?"
+            return "I'm Sheldon, your friendly AI buddy! I love learning new things and going on adventures with curious minds like yours. What should we explore today?"
 
         # Default curious response
         responses = [

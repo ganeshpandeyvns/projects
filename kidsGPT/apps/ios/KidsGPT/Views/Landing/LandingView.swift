@@ -14,14 +14,14 @@ struct LandingView: View {
                     // Hero Section
                     HeroSection()
 
-                    // Portal Cards
+                    // Portal Cards (Kids & Parent only - Admin is web-only)
                     VStack(spacing: 16) {
                         Text("Choose Your Portal")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary)
 
-                        ForEach(PortalType.allCases, id: \.self) { portal in
+                        ForEach(PortalType.appVisibleCases, id: \.self) { portal in
                             PortalCard(portal: portal) {
                                 withAnimation(.bouncy) {
                                     selectedPortal = portal
@@ -37,10 +37,46 @@ struct LandingView: View {
                     // Features Section
                     FeaturesSection()
 
-                    Spacer(minLength: 40)
+                    // Legal Footer
+                    LegalFooter()
+
+                    Spacer(minLength: 20)
                 }
                 .padding(.top, 20)
             }
+        }
+    }
+}
+
+// MARK: - Legal Footer
+struct LegalFooter: View {
+    @State private var showPrivacy = false
+    @State private var showTerms = false
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                Button("Privacy Policy") { showPrivacy = true }
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text("•")
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+
+                Button("Terms of Service") { showTerms = true }
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .font(.caption)
+
+            Text("© 2026 KidsGPT • Made with ❤️ for curious kids")
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+        }
+        .padding(.vertical, 20)
+        .sheet(isPresented: $showPrivacy) {
+            PrivacyPolicyView()
+        }
+        .sheet(isPresented: $showTerms) {
+            TermsOfServiceView()
         }
     }
 }

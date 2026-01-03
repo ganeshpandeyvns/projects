@@ -20,7 +20,11 @@ struct ContentView: View {
                     }
                 } else {
                     if let portal = selectedPortal {
-                        LoginView(portalType: portal, onBack: { selectedPortal = nil })
+                        if portal == .kids {
+                            KidsLoginView(onBack: { selectedPortal = nil })
+                        } else {
+                            LoginView(portalType: portal, onBack: { selectedPortal = nil })
+                        }
                     } else {
                         LandingView(selectedPortal: $selectedPortal)
                     }
@@ -34,6 +38,11 @@ enum PortalType: String, CaseIterable {
     case kids = "kids"
     case parent = "parent"
     case admin = "admin"
+
+    /// Portals visible in the iOS app (excludes admin - admin is web-only)
+    static var appVisibleCases: [PortalType] {
+        [.kids, .parent]
+    }
 
     var title: String {
         switch self {
@@ -61,7 +70,7 @@ enum PortalType: String, CaseIterable {
 
     var subtitle: String {
         switch self {
-        case .kids: return "Learn & Play with Sparky!"
+        case .kids: return "Learn & Play with Sheldon!"
         case .parent: return "Monitor & Manage"
         case .admin: return "System Control"
         }

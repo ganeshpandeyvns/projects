@@ -3,10 +3,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models import User
-from app.schemas import UserCreate, UserResponse
+from app.models import User, Child
+from app.schemas import UserCreate, UserResponse, KidLoginRequest, KidLoginResponse
 
 router = APIRouter()
 
@@ -96,3 +97,61 @@ async def get_current_user(
         )
 
     return user
+
+
+@router.post("/kid-login", response_model=KidLoginResponse)
+async def kid_login(
+    login_data: KidLoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Login a child using their 6-digit PIN.
+
+    This endpoint:
+    1. Looks up the child by PIN
+    2. Verifies the child is active
+    3. Verifies the parent account is active
+    4. Returns child info for the chat session
+    """
+    # Find child by PIN
+    result = await db.execute(
+        select(Child)
+        .options(selectinload(Child.parent))
+        .where(Child.login_pin == login_data.pin)
+    )
+    child = result.scalar_one_or_none()
+
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid PIN. Please check with your parent for the correct PIN."
+        )
+
+    # Check if child is active
+    if not child.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been deactivated. Please ask your parent."
+        )
+
+    # Check if parent is active
+    if not child.parent.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The parent account is not active."
+        )
+
+    # Reset daily messages if needed
+    child.reset_daily_messages()
+    await db.flush()
+
+    return KidLoginResponse(
+        child_id=child.id,
+        child_name=child.name,
+        age=child.age,
+        avatar_id=child.avatar_id,
+        daily_limit=child.daily_message_limit,
+        messages_remaining=child.daily_message_limit - child.messages_today,
+        can_send_message=child.can_send_message(),
+        parent_name=child.parent.display_name
+    )

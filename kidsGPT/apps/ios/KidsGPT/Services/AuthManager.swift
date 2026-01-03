@@ -6,10 +6,14 @@ class AuthManager: ObservableObject {
     @Published var selectedChild: ChildWithStats? = nil
     @Published var currentPortal: PortalType? = nil
     @Published var isAuthenticated = false
+    @Published var kidChildId: Int? = nil  // For kids who login with PIN
+    @Published var kidChildName: String? = nil
 
     private let userDefaultsKey = "kidsgpt_current_user"
     private let childDefaultsKey = "kidsgpt_selected_child"
     private let portalDefaultsKey = "kidsgpt_current_portal"
+    private let kidChildIdKey = "kidsgpt_kid_child_id"
+    private let kidChildNameKey = "kidsgpt_kid_child_name"
 
     init() {
         loadSavedState()
@@ -18,6 +22,14 @@ class AuthManager: ObservableObject {
     func login(user: User, portal: PortalType) {
         self.currentUser = user
         self.currentPortal = portal
+        self.isAuthenticated = true
+        saveState()
+    }
+
+    func kidLogin(childId: Int, childName: String) {
+        self.kidChildId = childId
+        self.kidChildName = childName
+        self.currentPortal = .kids
         self.isAuthenticated = true
         saveState()
     }
@@ -32,6 +44,8 @@ class AuthManager: ObservableObject {
         self.selectedChild = nil
         self.currentPortal = nil
         self.isAuthenticated = false
+        self.kidChildId = nil
+        self.kidChildName = nil
         clearSavedState()
     }
 
@@ -50,6 +64,12 @@ class AuthManager: ObservableObject {
         if let portal = currentPortal {
             UserDefaults.standard.set(portal.rawValue, forKey: portalDefaultsKey)
         }
+        if let kidId = kidChildId {
+            UserDefaults.standard.set(kidId, forKey: kidChildIdKey)
+        }
+        if let kidName = kidChildName {
+            UserDefaults.standard.set(kidName, forKey: kidChildNameKey)
+        }
     }
 
     private func loadSavedState() {
@@ -66,11 +86,20 @@ class AuthManager: ObservableObject {
            let portal = PortalType(rawValue: portalString) {
             self.currentPortal = portal
         }
+        // Load kid login state
+        let kidId = UserDefaults.standard.integer(forKey: kidChildIdKey)
+        if kidId > 0 {
+            self.kidChildId = kidId
+            self.kidChildName = UserDefaults.standard.string(forKey: kidChildNameKey)
+            self.isAuthenticated = true
+        }
     }
 
     private func clearSavedState() {
         UserDefaults.standard.removeObject(forKey: userDefaultsKey)
         UserDefaults.standard.removeObject(forKey: childDefaultsKey)
         UserDefaults.standard.removeObject(forKey: portalDefaultsKey)
+        UserDefaults.standard.removeObject(forKey: kidChildIdKey)
+        UserDefaults.standard.removeObject(forKey: kidChildNameKey)
     }
 }

@@ -9,8 +9,24 @@ struct KidsChatView: View {
     @State private var isTyping = false
     @State private var conversationId: Int? = nil
     @State private var messagesRemaining = 20
+    @State private var dailyLimit = 20
     @State private var showCelebration = false
     @State private var showChildSelector = false
+
+    // Computed property for active child ID (works for both login methods)
+    private var activeChildId: Int? {
+        authManager.kidChildId ?? authManager.selectedChild?.id
+    }
+
+    // Computed property for active child name
+    private var activeChildName: String {
+        authManager.kidChildName ?? authManager.selectedChild?.name ?? "Friend"
+    }
+
+    // Check if this is a direct kid login (not parent-selected)
+    private var isDirectKidLogin: Bool {
+        authManager.kidChildId != nil
+    }
 
     var body: some View {
         ZStack {
@@ -20,11 +36,11 @@ struct KidsChatView: View {
             VStack(spacing: 0) {
                 // Header
                 KidsChatHeader(
-                    childName: authManager.selectedChild?.name ?? "Friend",
+                    childName: activeChildName,
                     messagesRemaining: messagesRemaining,
-                    dailyLimit: authManager.selectedChild?.dailyMessageLimit ?? 20,
+                    dailyLimit: dailyLimit,
                     onLogout: { authManager.logout() },
-                    onSelectChild: { showChildSelector = true }
+                    onSelectChild: isDirectKidLogin ? nil : { showChildSelector = true }
                 )
 
                 // Chat Messages
@@ -33,7 +49,7 @@ struct KidsChatView: View {
                         LazyVStack(spacing: 16) {
                             // Welcome message
                             if messages.isEmpty {
-                                WelcomeMessage(childName: authManager.selectedChild?.name ?? "Friend")
+                                WelcomeMessage(childName: activeChildName)
                             }
 
                             ForEach(messages) { message in
@@ -92,12 +108,13 @@ struct KidsChatView: View {
     }
 
     private func loadStats() {
-        guard let child = authManager.selectedChild else { return }
+        guard let childId = activeChildId else { return }
         Task {
             do {
-                let stats = try await apiClient.getTodayStats(childId: child.id)
+                let stats = try await apiClient.getTodayStats(childId: childId)
                 await MainActor.run {
                     messagesRemaining = stats.messagesRemaining
+                    dailyLimit = stats.dailyLimit
                 }
             } catch {
                 print("Failed to load stats: \(error)")
@@ -106,7 +123,7 @@ struct KidsChatView: View {
     }
 
     private func sendMessage(_ text: String) {
-        guard !text.isEmpty, let child = authManager.selectedChild else { return }
+        guard !text.isEmpty, let childId = activeChildId else { return }
 
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
@@ -128,7 +145,7 @@ struct KidsChatView: View {
         Task {
             do {
                 let response = try await apiClient.sendMessage(
-                    childId: child.id,
+                    childId: childId,
                     message: trimmedText,
                     conversationId: conversationId
                 )
@@ -177,7 +194,7 @@ struct KidsChatHeader: View {
     let messagesRemaining: Int
     let dailyLimit: Int
     let onLogout: () -> Void
-    let onSelectChild: () -> Void
+    let onSelectChild: (() -> Void)?  // Optional - nil for direct kid logins
 
     var progress: Double {
         guard dailyLimit > 0 else { return 0 }
@@ -211,8 +228,10 @@ struct KidsChatHeader: View {
 
                 // Settings Menu
                 Menu {
-                    Button(action: onSelectChild) {
-                        Label("Switch Child", systemImage: "person.2")
+                    if let onSelectChild = onSelectChild {
+                        Button(action: onSelectChild) {
+                            Label("Switch Child", systemImage: "person.2")
+                        }
                     }
                     Button(role: .destructive, action: onLogout) {
                         Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
@@ -262,6 +281,24 @@ struct WelcomeMessage: View {
     let childName: String
     @State private var animate = false
 
+    // Fun facts to display on start
+    private static let funFacts = [
+        "🦋 Butterflies taste with their feet!",
+        "🐙 Octopuses have three hearts and blue blood!",
+        "🍯 Honey never spoils - 3,000-year-old honey was found in Egyptian tombs!",
+        "🦈 Sharks have been around longer than trees!",
+        "🌙 A day on Venus is longer than a year on Venus!",
+        "🦒 Giraffes have the same number of neck bones as humans - just 7!",
+        "🐘 Elephants are the only animals that can't jump!",
+        "🌈 Rainbows are actually full circles - we just see half from the ground!",
+        "🦜 Parrots can live for over 80 years!",
+        "⭐ There are more stars in the universe than grains of sand on Earth!"
+    ]
+
+    private var randomFunFact: String {
+        WelcomeMessage.funFacts.randomElement() ?? WelcomeMessage.funFacts[0]
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             ZStack {
@@ -286,7 +323,7 @@ struct WelcomeMessage: View {
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.textPrimary)
 
-                Text("I'm Sparky, your learning buddy!")
+                Text("I'm Sheldon, your learning buddy!")
                     .font(.subheadline)
                     .foregroundColor(AppColors.textSecondary)
 
@@ -295,6 +332,26 @@ struct WelcomeMessage: View {
                     .foregroundColor(AppColors.textSecondary.opacity(0.8))
             }
             .multilineTextAlignment(.center)
+
+            // Fun Fact Card
+            VStack(spacing: 8) {
+                Text("🎉 Fun Fact!")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(Color(hex: "f59e0b"))
+
+                Text(randomFunFact)
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textPrimary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(hex: "fef3c7"))
+            )
+            .padding(.horizontal, 24)
         }
         .padding(.vertical, 40)
     }
@@ -315,7 +372,7 @@ struct ChatBubble: View {
                     HStack(spacing: 6) {
                         Text("✨")
                             .font(.caption)
-                        Text("Sparky")
+                        Text("Sheldon")
                             .font(.caption)
                             .fontWeight(.medium)
                             .foregroundColor(AppColors.textSecondary)
@@ -351,7 +408,7 @@ struct QuickSuggestionsBar: View {
     let suggestions = [
         ("🦕", "Dinosaurs", "Tell me about T-Rex!", Color(hex: "10b981")),
         ("🚀", "Space", "How big is the sun?", Color(hex: "6366f1")),
-        ("🔢", "Math", "Help me with math!", Color(hex: "f59e0b")),
+        ("✨", "Number's Magic", "Show me some number magic!", Color(hex: "f59e0b")),
         ("📚", "Stories", "Tell me a story!", Color(hex: "ec4899"))
     ]
 
@@ -427,7 +484,7 @@ struct ChatInputBar: View {
                         .foregroundColor(showEmojiPicker ? Color(hex: "6366f1") : AppColors.textSecondary)
                 }
 
-                TextField("Ask Sparky something fun!", text: $text)
+                TextField("Ask Sheldon something fun!", text: $text)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(Color(hex: "f1f5f9"))

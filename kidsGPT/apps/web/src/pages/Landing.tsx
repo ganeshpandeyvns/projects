@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '../App'
-import { authApi, adminApi, childrenApi } from '../lib/api'
+import { authApi, adminApi } from '../lib/api'
 
 type PortalType = 'kids' | 'parent' | 'admin' | null
 
@@ -107,32 +107,38 @@ function PortalCard({
   )
 }
 
-// Kids Quick Start Form
+// Kids PIN Login Form
 function KidsForm({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate()
-  const { setUser, setChildId } = useAuth()
-  const [name, setName] = useState('')
-  const [age, setAge] = useState(8)
+  const { setChildId } = useAuth()
+  const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleStart = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (pin.length !== 6) {
+      setError('Please enter your 6-digit PIN')
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
-      const demoEmail = `kid_${Date.now()}@kidsgpt.demo`
-      const user = await authApi.register(demoEmail, 'Demo Parent')
-      const child = await childrenApi.create(user.id, { name, age })
-      setUser(user)
-      setChildId(child.id)
+      const response = await authApi.kidLogin(pin)
+      setChildId(response.child_id)
       navigate('/chat')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Something went wrong')
+      setError(err.response?.data?.detail || 'Invalid PIN. Please check with your parent.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+    setPin(value)
   }
 
   return (
@@ -148,45 +154,46 @@ function KidsForm({ onBack }: { onBack: () => void }) {
             <span className="text-4xl">⚡</span>
           </div>
           <h2 className="text-2xl font-bold text-gray-800">Hey there, friend!</h2>
-          <p className="text-gray-500 mt-1">Tell me about yourself</p>
+          <p className="text-gray-500 mt-1">Enter your secret PIN to start</p>
         </div>
 
-        <form onSubmit={handleStart} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">What's your name?</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+              Your 6-Digit PIN
+            </label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your awesome name"
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition-all outline-none text-lg"
+              inputMode="numeric"
+              value={pin}
+              onChange={handlePinChange}
+              placeholder="• • • • • •"
+              maxLength={6}
+              className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition-all outline-none text-3xl text-center font-mono tracking-[0.5em] placeholder:tracking-[0.3em]"
+              style={{ letterSpacing: '0.5em' }}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">How old are you? <span className="text-2xl font-bold text-amber-500">{age}</span></label>
-            <input
-              type="range"
-              min="3"
-              max="13"
-              value={age}
-              onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full h-3 rounded-full appearance-none cursor-pointer"
-              style={{ background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${((age - 3) / 10) * 100}%, #e5e7eb ${((age - 3) / 10) * 100}%, #e5e7eb 100%)` }}
-            />
+            <p className="text-center text-gray-400 text-sm mt-2">
+              Ask your parent for your PIN!
+            </p>
           </div>
 
           {error && <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || pin.length !== 6}
             className="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 text-lg"
           >
-            {loading ? 'Getting ready...' : "🚀 Let's Go!"}
+            {loading ? 'Checking...' : "Let's Go! 🚀"}
           </button>
         </form>
+
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <p className="text-center text-gray-400 text-sm mb-2">Don't have a PIN yet?</p>
+          <p className="text-center text-gray-500 text-sm">
+            Ask your parent to add you in the <strong>Parent Hub</strong>!
+          </p>
+        </div>
 
         <button onClick={onBack} className="w-full mt-4 py-3 text-gray-500 hover:text-gray-700 font-medium">
           ← Back
@@ -487,13 +494,38 @@ export default function Landing() {
           )}
         </AnimatePresence>
 
+        {/* Footer with legal links */}
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="absolute bottom-6 text-center text-gray-400 text-sm"
+          className="absolute bottom-6 text-center"
         >
-          © 2025 KidsGPT • Safe AI for Children • Privacy First
+          <div className="flex items-center justify-center gap-4 text-gray-400 text-sm mb-2">
+            <button
+              onClick={() => window.open('/privacy', '_blank')}
+              className="hover:text-gray-600 transition-colors"
+            >
+              Privacy Policy
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => window.open('/terms', '_blank')}
+              className="hover:text-gray-600 transition-colors"
+            >
+              Terms of Service
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => window.open('/support', '_blank')}
+              className="hover:text-gray-600 transition-colors"
+            >
+              Support
+            </button>
+          </div>
+          <p className="text-gray-400 text-xs">
+            © 2026 KidsGPT • Made with ❤️ for curious kids everywhere
+          </p>
         </motion.footer>
       </div>
     </div>

@@ -8,7 +8,7 @@ struct AppAccessibility {
 
     struct Labels {
         // Landing
-        static let kidsPortal = "Kids Zone. Learn and play with Sparky, your AI learning buddy."
+        static let kidsPortal = "Kids Zone. Learn and play with Sheldon, your AI learning buddy."
         static let parentPortal = "Parent Hub. Monitor and manage your children's learning."
         static let adminPortal = "Admin Panel. System administration and oversight."
 
@@ -20,7 +20,7 @@ struct AppAccessibility {
         static let backButton = "Go back to portal selection"
 
         // Kids Chat
-        static let chatInput = "Type your message to Sparky here"
+        static let chatInput = "Type your message to Sheldon here"
         static let sendButton = "Send message"
         static let emojiButton = "Open emoji picker"
         static let messagesRemaining = { (count: Int) in
@@ -44,14 +44,14 @@ struct AppAccessibility {
     struct Hints {
         static let portalCard = "Double tap to select this portal"
         static let chatSend = "Double tap to send your message"
-        static let quickSuggestion = "Double tap to ask Sparky about this topic"
+        static let quickSuggestion = "Double tap to ask Sheldon about this topic"
     }
 
     // MARK: - Announcements
 
     struct Announcements {
         static let messageSent = "Message sent"
-        static let messageReceived = "Sparky responded"
+        static let messageReceived = "Sheldon responded"
         static let loginSuccess = "Successfully logged in"
         static let error = { (message: String) in "Error: \(message)" }
     }

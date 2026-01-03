@@ -29,6 +29,7 @@ export interface Child {
   parent_id: number
   name: string
   age: number
+  login_pin: string  // 6-digit PIN for kid login
   avatar_id: string | null
   interests: string[] | null
   learning_goals: string[] | null
@@ -37,6 +38,17 @@ export interface Child {
   last_message_date: string | null
   is_active: boolean
   created_at: string
+}
+
+export interface KidLoginResponse {
+  child_id: number
+  child_name: string
+  age: number
+  avatar_id: string | null
+  daily_limit: number
+  messages_remaining: number
+  can_send_message: boolean
+  parent_name: string | null
 }
 
 export interface ChildWithStats extends Child {
@@ -132,6 +144,11 @@ export const authApi = {
     const { data } = await api.get<User>(`/auth/me?user_id=${userId}`)
     return data
   },
+
+  kidLogin: async (pin: string) => {
+    const { data } = await api.post<KidLoginResponse>('/auth/kid-login', { pin })
+    return data
+  },
 }
 
 // Children API
@@ -158,6 +175,11 @@ export const childrenApi = {
 
   delete: async (childId: number, parentId: number) => {
     await api.delete(`/children/${childId}?parent_id=${parentId}`)
+  },
+
+  regeneratePin: async (childId: number, parentId: number) => {
+    const { data } = await api.post<Child>(`/children/${childId}/regenerate-pin?parent_id=${parentId}`)
+    return data
   },
 }
 

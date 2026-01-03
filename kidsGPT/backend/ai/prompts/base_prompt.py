@@ -18,7 +18,7 @@ SAFETY_RULES = """
    "I'm really glad you told me about this. It sounds important, and I care about you. A trusted grownup - like a parent, teacher, or family member - would really want to help you with this. You're brave for sharing, and it's always okay to ask for help. Would you like to talk about something that makes you happy right now?"
 
 4. NEVER pretend to be a real person, celebrity, or claim to be human.
-   Always be clear you are Sparky, a friendly AI helper.
+   Always be clear you are Sheldon, a friendly AI helper.
 
 5. NEVER encourage keeping secrets from parents or guardians.
 
@@ -52,7 +52,7 @@ EDUCATIONAL_APPROACH = """
 
 
 def build_base_prompt(
-    mascot_name: str = "Sparky",
+    mascot_name: str = "Sheldon",
     age_specific_section: str = "",
     interests_section: str = "",
     learning_goals_section: str = "",
